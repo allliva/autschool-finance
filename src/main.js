@@ -68,17 +68,22 @@ async function loadData() {
 }
 
 function loginScreen(error = "") {
-  app.innerHTML = `<main class="login-shell"><section class="login-card" aria-labelledby="login-title">
-    <div class="brand-mark" aria-hidden="true">АШ</div><p class="eyebrow">АутШкола</p><h1 id="login-title">Кабинет авторов</h1>
-    <p class="muted">Продажи, начисления и выплаты — в одном месте.</p>
-    ${error ? `<p class="alert" role="alert">${escapeHtml(error)}</p>` : ""}
-    <form id="login-form" class="stack"><label>Email<input name="email" type="email" autocomplete="email" required></label>
-    <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
-    <button class="primary" type="submit">Войти</button></form>
-    <div class="login-divider"><span>или</span></div>
-    <button id="demo-login" class="demo-login" type="button"><strong>Посмотреть демо</strong><span>Готовый кабинет Марины с тестовыми данными</span></button>
-    <p class="demo-caption">Только просмотр · изменения данных недоступны</p>
-    </section></main>`;
+  app.innerHTML = `<main class="login-shell"><section class="login-frame" aria-labelledby="login-title">
+    <div class="login-visual" aria-hidden="true"><div class="visual-orb orb-one"></div><div class="visual-orb orb-two"></div>
+      <div class="login-visual-copy"><div class="brand-mark">АШ</div><p>Финансы творческой команды</p><strong>Всё важное — спокойно, понятно и в одном месте.</strong></div>
+      <div class="visual-card visual-card-main"><span>Ближайшая выплата</span><strong>5 сентября</strong><i></i></div>
+      <div class="visual-card visual-card-small"><span>Начисления</span><strong>Под контролем</strong></div>
+    </div>
+    <div class="login-card"><p class="eyebrow">АутШкола</p><h1 id="login-title">Кабинет авторов</h1>
+      <p class="muted">Продажи, начисления и выплаты — в одном месте.</p>
+      ${error ? `<p class="alert" role="alert">${escapeHtml(error)}</p>` : ""}
+      <form id="login-form" class="stack"><label>Email<input name="email" type="email" autocomplete="email" required></label>
+      <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Войти</button></form>
+      <div class="login-divider"><span>или</span></div>
+      <button id="demo-login" class="demo-login" type="button"><strong>Посмотреть демо</strong><span>Готовый кабинет Марины с тестовыми данными</span></button>
+      <p class="demo-caption">Только просмотр · изменения данных недоступны</p>
+    </div></section></main>`;
   document.querySelector("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -117,11 +122,18 @@ function dashboardView() {
   const staff = sum(monthlyEarnings.filter((item) => item.authorId !== "anya"), earningAmount);
   const myIncome = sum(monthlyEarnings.filter((item) => item.authorId === "anya"), earningAmount);
   const reserve = sum(unpaidEmployeeEarnings(), earningAmount);
+  const average = monthlySales.length ? Math.round(gross / monthlySales.length) : 0;
   return `<section class="page-heading"><div><p class="eyebrow">Обзор</p><h2>Финансы АутШколы</h2><p class="muted">${escapeHtml(monthFormatter.format(now))}</p></div>
     <button id="seed-button" class="secondary">Обновить демо-данные</button></section>
-    <div class="metrics">${card("Выручка за месяц", rub(gross))}${card("Налог", rub(tax))}${card("Начислено сотрудникам", rub(staff))}${card("Нужно выплатить", rub(reserve), "accent")}${card("Мой доход", rub(myIncome), "green")}</div>
-    <article class="reserve-card"><div><span>Зарплатный резерв</span><strong>${rub(reserve)}</strong></div><p>Столько нужно иметь на зарплатном счёте на сегодняшний день</p></article>
-    <section class="panel"><div class="panel-title"><h3>Последние продажи</h3><button class="link-button" data-view="sales">Все продажи</button></div>${compactSalesTable(sortByDate(activeSales(), "soldAt").slice(0, 8))}</section>`;
+    <section class="admin-overview-grid">
+      <article class="finance-overview"><div class="overview-heading"><div><span>Выручка за месяц</span><strong>${rub(gross)}</strong></div><span class="trend-badge">${monthlySales.length} продаж</span></div>
+        <div class="overview-kpis">${card("Налог", rub(tax))}${card("Начислено команде", rub(staff))}${card("Мой доход", rub(myIncome), "soft")}</div>
+      </article>
+      <article class="reserve-card"><div class="reserve-icon" aria-hidden="true">↗</div><div><span>Зарплатный резерв</span><strong>${rub(reserve)}</strong></div><p>Необходимая сумма на зарплатном счёте на сегодняшний день</p></article>
+    </section>
+    <section class="admin-lower-grid"><section class="panel sales-panel"><div class="panel-title"><div><p class="section-kicker">Операции</p><h3>Последние продажи</h3></div><button class="link-button" data-view="sales">Все продажи</button></div>${compactSalesTable(sortByDate(activeSales(), "soldAt").slice(0, 8))}</section>
+      <aside class="insight-card"><p class="section-kicker">В этом месяце</p><h3>Коротко о продажах</h3><div class="insight-stat"><span>Средний чек</span><strong>${rub(average)}</strong></div><div class="insight-stat"><span>Операций</span><strong>${monthlySales.length}</strong></div><div class="insight-visual" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div></aside>
+    </section>`;
 }
 
 function compactSalesTable(items) {
@@ -218,10 +230,10 @@ function productsView() {
       const rules = state.revenueRules.filter((rule) => rule.productId === product.id).sort((a, b) => asDate(b.effectiveFrom) - asDate(a.effectiveFrom));
       const productSales = state.sales.filter((sale) => sale.productId === product.id && sale.status === "paid");
       const current = findRule(product.id);
-      return `<article class="product-card"><div class="panel-title"><span class="pill">${escapeHtml(product.type || "digital")}</span><span class="status ${product.active === false ? "" : "success"}">${product.active === false ? "Архив" : "Активен"}</span></div>
-        <h3>${escapeHtml(product.title)}</h3><strong>${rub(product.basePriceKopecks ?? product.price * 100)}</strong>
-        <p>${productSales.length} продаж · ${rub(sum(productSales, saleGross))} выручки</p>
-        <div class="shares">${(current?.participants || []).map((part) => `<span>${escapeHtml(authorName(part.authorId))} — ${part.shareBps / 100}%</span>`).join("") || "Нет действующего правила"}</div>
+      return `<article class="product-card"><div class="product-meta"><span class="pill">${escapeHtml(product.type || "digital")}</span><span class="status ${product.active === false ? "" : "active"}">${product.active === false ? "Архив" : "Активен"}</span></div>
+        <h3>${escapeHtml(product.title)}</h3><div class="product-price">${rub(product.basePriceKopecks ?? product.price * 100)}</div>
+        <div class="product-stats"><span><small>Продаж</small><strong>${productSales.length}</strong></span><span><small>Выручка</small><strong>${rub(sum(productSales, saleGross))}</strong></span></div>
+        <div class="shares"><small>Распределение долей</small>${(current?.participants || []).map((part) => `<span>${escapeHtml(authorName(part.authorId))}<b>${part.shareBps / 100}%</b></span>`).join("") || "Нет действующего правила"}</div>
         <details><summary>История правил (${rules.length})</summary>${rules.map((rule) => `<p class="rule-line"><b>${dateText(rule.effectiveFrom)} — ${rule.effectiveTo ? dateText(rule.effectiveTo) : "далее"}</b><br>${rule.participants.map((p) => `${escapeHtml(authorName(p.authorId))} ${p.shareBps / 100}%`).join(" · ")}</p>`).join("")}</details>
         <button class="secondary full" data-edit-rule="${product.id}">Изменить распределение</button></article>`;
     }).join("")}</div>`;
@@ -285,7 +297,7 @@ function payoutProgress() {
   const elapsed = Math.max(0, Math.min(total, now - previous));
   const percent = Math.round(elapsed / total * 100);
   const days = Math.ceil((next - now) / 86400000);
-  return `<section class="panel progress-panel"><div class="panel-title"><h3>${now.getDate() === day ? "Сегодня день выплаты" : `До выплаты осталось ${days} ${days % 10 === 1 && days % 100 !== 11 ? "день" : "дней"}`}</h3><strong>${dateText(next)}</strong></div><div class="progress-track" aria-label="Прогресс до выплаты"><span style="width:${percent}%"></span></div><div class="progress-labels"><span>${dateText(previous)}</span><span>${dateText(next)}</span></div></section>`;
+  return `<div class="author-payout-progress"><div class="progress-copy"><strong>${now.getDate() === day ? "Сегодня день выплаты" : `До выплаты осталось ${days} ${days % 10 === 1 && days % 100 !== 11 ? "день" : "дней"}`}</strong><span>${percent}% периода прошло</span></div><div class="progress-track" aria-label="Прогресс до выплаты"><span style="width:${percent}%"></span></div><div class="progress-labels"><span>${dateText(previous)}</span><span>${dateText(next)}</span></div></div>`;
 }
 
 function authorDashboard() {
@@ -296,11 +308,12 @@ function authorDashboard() {
   const nextPayout = (() => { const d = state.settings.payoutDay || 5; return now.getDate() < d ? new Date(now.getFullYear(), now.getMonth(), d) : new Date(now.getFullYear(), now.getMonth() + 1, d); })();
   const months = [...new Set(state.earnings.map((item) => monthKey(earningDate(item))))].sort().reverse();
   const rows = [...state.earnings].filter((item) => state.authorMonth === "all" || monthKey(earningDate(item)) === state.authorMonth).sort((a, b) => asDate(earningDate(b)) - asDate(earningDate(a))).slice(0, 50);
-  return `<section class="page-heading"><div><p class="eyebrow">Мой кабинет</p><h2>Здравствуйте, ${escapeHtml(state.profile.name)}</h2></div><button class="secondary" data-view="payouts">Посмотреть выплаты</button></section>
-    <div class="metrics author-metrics">${card("Всего заработано", rub(total))}${card("Заработано в этом месяце", rub(sum(current, earningAmount)))}${card("К ближайшей выплате", rub(sum(unpaid, earningAmount)), "accent", dateText(nextPayout))}</div>
-    <section class="panel"><div class="panel-title"><h3>Мои начисления</h3><label class="inline-filter">Месяц<select id="author-month-filter"><option value="all">Все месяцы</option>${months.map((m) => `<option value="${m}" ${state.authorMonth === m ? "selected" : ""}>${m}</option>`).join("")}</select></label></div><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Время</th><th>Товар</th><th>Цена</th><th>Налог</th><th>Доля</th><th>Начислено</th></tr></thead><tbody>
+  return `<section class="page-heading author-heading"><div><p class="eyebrow">Мой кабинет</p><h2>Здравствуйте, ${escapeHtml(state.profile.name)}</h2></div><button class="secondary" data-view="payouts">Посмотреть выплаты</button></section>
+    <section class="author-finance-grid"><article class="author-payout-hero"><div class="hero-top"><div><span>К ближайшей выплате</span><strong>${rub(sum(unpaid, earningAmount))}</strong><p>${escapeHtml(monthFormatter.format(nextPayout))}</p></div><div class="hero-date-mark">${nextPayout.getDate()}</div></div>${payoutProgress()}</article>
+      <div class="author-secondary-metrics">${card("Заработано в этом месяце", rub(sum(current, earningAmount)), "monthly")}${card("Всего заработано", rub(total), "total")}</div></section>
+    <section class="panel earnings-panel"><div class="panel-title"><div><p class="section-kicker">История</p><h3>Мои начисления</h3></div><label class="inline-filter">Месяц<select id="author-month-filter"><option value="all">Все месяцы</option>${months.map((m) => `<option value="${m}" ${state.authorMonth === m ? "selected" : ""}>${m}</option>`).join("")}</select></label></div><div class="table-wrap"><table><thead><tr><th>№</th><th>Дата</th><th>Время</th><th>Товар</th><th>Цена</th><th>Налог</th><th>Доля</th><th>Начислено</th></tr></thead><tbody>
       ${rows.map((e, index) => `<tr><td>${index + 1}</td><td>${dateText(earningDate(e))}</td><td>${timeText(earningDate(e))}</td><td>${escapeHtml(e.productTitleSnapshot || e.productTitle)}</td><td>${rub(e.grossKopecks ?? e.grossAmount * 100)}</td><td>${(e.taxRateBpsSnapshot ?? 400) / 100}%</td><td>${earningShare(e) / 100}%</td><td>${rub(earningAmount(e))}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">Начислений пока нет</td></tr>`}
-    </tbody></table></div></section>${payoutProgress()}`;
+    </tbody></table></div></section>`;
 }
 
 function statisticsView() {
