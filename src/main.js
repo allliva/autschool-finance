@@ -230,7 +230,7 @@ function productsView() {
       const rules = state.revenueRules.filter((rule) => rule.productId === product.id).sort((a, b) => asDate(b.effectiveFrom) - asDate(a.effectiveFrom));
       const productSales = state.sales.filter((sale) => sale.productId === product.id && sale.status === "paid");
       const current = findRule(product.id);
-      return `<article class="product-card"><div class="product-meta"><span class="pill">${escapeHtml(product.type || "digital")}</span><span class="status ${product.active === false ? "" : "active"}">${product.active === false ? "Архив" : "Активен"}</span></div>
+      return `<article class="product-card"><div class="product-meta"><span class="pill">${escapeHtml(product.type === "digital" || !product.type ? "Цифровой" : product.type)}</span><span class="status ${product.active === false ? "" : "active"}">${product.active === false ? "Архив" : "Активен"}</span></div>
         <h3>${escapeHtml(product.title)}</h3><div class="product-price">${rub(product.basePriceKopecks ?? product.price * 100)}</div>
         <div class="product-stats"><span><small>Продаж</small><strong>${productSales.length}</strong></span><span><small>Выручка</small><strong>${rub(sum(productSales, saleGross))}</strong></span></div>
         <div class="shares"><small>Распределение долей</small>${(current?.participants || []).map((part) => `<span>${escapeHtml(authorName(part.authorId))}<b>${part.shareBps / 100}%</b></span>`).join("") || "Нет действующего правила"}</div>
@@ -249,7 +249,11 @@ function revenueRuleForm(product) {
 }
 
 function authorsView() {
+  const awaiting = unpaidEmployeeEarnings();
+  const awaitingAuthors = new Set(awaiting.map((item) => item.authorId)).size;
+  const totalDue = sum(awaiting, earningAmount);
   return `<section class="page-heading"><div><p class="eyebrow">Команда</p><h2>Авторы</h2></div></section>
+    <div class="compact-summary">${card("Авторов", state.authors.length)}${card("Ожидают выплаты", awaitingAuthors)}${card("Общая сумма к выплате", rub(totalDue))}</div>
     <section class="panel"><div class="panel-title"><div><h3>Создать доступ сотруднику</h3><p>Аккаунт создаёт только администратор. Самостоятельной регистрации в приложении нет.</p></div></div>
       <form id="author-access-form" class="access-form" autocomplete="off"><label>Автор<select name="authorId" required>${state.authors.filter((a) => a.id !== "anya" && !a.userId).map((a) => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("")}</select></label><label>Учебный email<input name="employeeEmail" type="text" inputmode="email" autocomplete="off" required></label><label>Временный пароль<input name="temporaryPassword" type="password" autocomplete="new-password" minlength="8" required></label><button class="primary" type="submit">Создать доступ</button></form>
     </section><section class="panel"><div class="table-wrap"><table><thead><tr><th>Имя</th><th>Доступ</th><th>Активен</th><th>Товаров</th><th>Продаж</th><th>Заработано</th><th>Ожидает выплаты</th></tr></thead><tbody>
@@ -285,7 +289,14 @@ function payoutDetails(payout) {
 }
 
 function myPayoutsView() {
-  return `<section class="page-heading"><div><p class="eyebrow">Мой кабинет</p><h2>Мои выплаты</h2></div></section><section class="panel payout-list">${sortByDate(state.payouts, "periodStart").map(payoutDetails).join("") || `<p class="empty">Выплат пока нет</p>`}</section>`;
+  const paid = state.payouts.filter((payout) => payout.status === "paid");
+  const latest = [...paid].sort((a, b) => asDate(b.paidAt || b.dueDate) - asDate(a.paidAt || a.dueDate))[0];
+  const now = new Date();
+  const day = state.settings.payoutDay || 5;
+  const nextDate = now.getDate() < day ? new Date(now.getFullYear(), now.getMonth(), day) : new Date(now.getFullYear(), now.getMonth() + 1, day);
+  return `<section class="page-heading"><div><p class="eyebrow">Мой кабинет</p><h2>Мои выплаты</h2></div></section>
+    <div class="compact-summary payout-summary">${card("Всего выплачено", rub(sum(paid, payoutAmount)))}${card("Последняя выплата", latest ? rub(payoutAmount(latest)) : "—", "", latest ? dateText(latest.paidAt || latest.dueDate) : "Выплат пока нет")}${card("Ближайшая дата выплаты", dateText(nextDate))}</div>
+    <section class="panel payout-list">${sortByDate(state.payouts, "periodStart").map(payoutDetails).join("") || `<p class="empty">Выплат пока нет</p>`}</section>`;
 }
 
 function payoutProgress() {

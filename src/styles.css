@@ -198,6 +198,10 @@ button:focus-visible, summary:focus-visible { outline: 3px solid rgba(75, 162, 2
 .metric strong { display: block; margin-top: 9px; font-size: 1.38rem; letter-spacing: -.025em; }
 .metric small { display: block; margin-top: 8px; color: var(--muted); }
 .metric.soft { border-color: #dde5f2; background: #f5f7fc; }
+.compact-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.compact-summary .metric { min-height: 98px; box-shadow: none; }
+.compact-summary .metric span { min-height: 0; }
+.compact-summary .metric strong { font-size: 1.28rem; }
 .panel { padding: 24px; margin-bottom: 20px; }
 .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .panel-title h3 { margin-bottom: 0; }
@@ -416,7 +420,7 @@ code { padding: 2px 5px; border-radius: 5px; background: #edf2f7; color: #52677d
   .sidebar-user { display: none; }
   .content { padding: 24px 16px 44px; }
   .page-heading { align-items: flex-start; flex-direction: column; }
-  .overview-kpis, .author-secondary-metrics { grid-template-columns: 1fr; }
+  .overview-kpis, .author-secondary-metrics, .compact-summary { grid-template-columns: 1fr; }
   .insight-card { display: block; }
   .insight-card h3 { margin-bottom: 18px; }
   .finance-overview, .reserve-card, .author-payout-hero { padding: 22px; }
