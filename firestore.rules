@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return signedIn() && profile().active == true;
+    }
+
+    function admin() {
+      return activeUser() && profile().role == 'admin';
+    }
+
+    function ownAuthor(authorId) {
+      return activeUser() && profile().role == 'author' && profile().authorId == authorId;
+    }
+
+    function demoReader(authorId) {
+      return signedIn()
+        && request.auth.token.firebase.sign_in_provider == 'anonymous'
+        && authorId == 'marina';
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || admin());
+      allow list, create, update, delete: if admin();
+    }
+
+    match /authors/{authorId} {
+      allow read, write: if admin();
+    }
+
+    match /products/{productId} {
+      allow read, write: if admin();
+    }
+
+    match /revenueRules/{ruleId} {
+      allow read, create, update: if admin();
+      allow delete: if false;
+    }
+
+    match /productSplits/{splitId} {
+      allow read: if admin();
+      allow write: if false;
+    }
+
+    match /sales/{saleId} {
+      allow read, create, update, delete: if admin();
+    }
+
+    match /earnings/{earningId} {
+      allow read: if demoReader(resource.data.authorId) || admin() || ownAuthor(resource.data.authorId);
+      allow create, update, delete: if admin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if demoReader(resource.data.authorId) || admin() || ownAuthor(resource.data.authorId);
+      allow create, update, delete: if admin();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if admin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
